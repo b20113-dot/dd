@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구슬 홀짝: 나락</title>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Courier+Prime:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #030303; 
+            color: #8a8a8a;
+            font-family: 'Noto Sans KR', sans-serif;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+            transition: background 0.8s ease-in-out;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, transparent 40%, rgba(0, 0, 0, 0.95) 90%),
+                        radial-gradient(circle, transparent 60%, rgba(139, 0, 0, 0.15) 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 5개 이하일 때 미친 듯이 발작하는 화면 효과 */
+        body.danger-mode {
+            background-color: #120000 !important;
+            animation: death-thrash 0.1s infinite;
+        }
+        body.danger-mode::before {
+            background: radial-gradient(circle, transparent 15%, rgba(0, 0, 0, 0.95) 75%),
+                        radial-gradient(circle, rgba(255, 0, 0, 0.45) 10%, rgba(255, 0, 0, 0.35) 100%) !important;
+        }
+
+        @keyframes death-thrash {
+            0% { transform: translate(3px, 2px) rotate(1deg); }
+            20% { transform: translate(-3px, -3px) rotate(-1.5deg); }
+            40% { transform: translate(-5px, 2px) rotate(1.5deg); }
+            60% { transform: translate(4px, -2px) rotate(-1deg); }
+            80% { transform: translate(-2px, 4px) rotate(2deg); }
+            100% { transform: translate(3px, -3px) rotate(-1.5deg); }
+        }
+
+        .shapes-bg {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.05;
+            font-family: 'Courier Prime', monospace;
+            font-size: 140px;
+        }
+        .shape-1 { position: absolute; top: 8%; left: 8%; transform: rotate(-15deg); }
+        .shape-2 { position: absolute; bottom: 12%; left: 12%; transform: rotate(45deg); }
+        .shape-3 { position: absolute; top: 15%; right: 8%; transform: rotate(10deg); }
+        .shape-4 { position: absolute; bottom: 8%; right: 12%; transform: rotate(-30deg); }
+
+        .container {
+            background-color: #0b0b0b;
+            border-radius: 4px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.95), 0 0 10px rgba(139, 0, 0, 0.1);
+            border: 1px solid #1a1a1a;
+            z-index: 2;
+            position: relative;
+        }
+        
+        h1 {
+            font-family: 'Black Han Sans', sans-serif;
+            color: #d1d1d1;
+            font-size: 32px;
+            margin: 0 0 5px 0;
+            letter-spacing: 5px;
+        }
+        .sub-title {
+            font-size: 12px;
+            color: #555;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
+        
+        .timer-box { margin: 20px 0; }
+        .timer-text {
+            font-family: 'Courier Prime', monospace;
+            font-size: 18px;
+            color: #8b0000;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        .timer-bar-bg {
+            width: 100%; height: 4px;
+            background-color: #111;
+            overflow: hidden;
+            border: 1px solid #222;
+        }
+        .timer-bar-fill {
+            height: 100%; background-color: #8b0000; width: 100%;
+            transition: width 1s linear, background-color 0.5s;
+        }
+        
+        .status-board {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #050505;
+            border: 1px solid #1a1a1a;
+            letter-spacing: 1px;
+        }
+        .player { color: #666; text-align: left; }
+        .computer { color: #666; text-align: right; }
+        .player-danger { color: #ff3333 !important; text-shadow: 0 0 8px rgba(255,0,0,0.5); }
+        .marble-count { 
+            font-size: 40px; 
+            font-family: 'Courier Prime', monospace; 
+            font-weight: bold;
+            display: block; 
+            margin-top: 8px;
+            color: #b0b0b0;
+        }
+        
+        .game-zone {
+            margin: 25px 0;
+            padding: 25px 15px;
+            background-color: #070707;
+            border: 1px solid #151515;
+        }
+        
+        .btn-odd, .btn-even {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 16px;
+            font-size: 15px;
+            margin: 12px 0;
+            cursor: pointer;
+            border: 1px solid #333;
+            background-color: #111;
+            color: #a0a0a0;
+            font-weight: bold;
+            letter-spacing: 2px;
+            transition: all 0.2s;
+        }
+        .btn-odd:hover, .btn-even:hover { background-color: #222; border-color: #ff3333; color: #ff3333; }
+        
+        input[type="number"] {
+            padding: 10px;
+            font-size: 20px;
+            width: 70px;
+            text-align: center;
+            border: 1px solid #333;
+            background-color: #050505;
+            color: #ff3333;
+            margin-right: 10px;
+            font-family: 'Courier Prime', monospace;
+        }
+        .btn-action { 
+            padding: 12px 20px;
+            font-size: 15px;
+            background-color: #1a0000; 
+            color: #8b0000; 
+            border: 1px solid #8b0000;
+            cursor: pointer;
+            font-weight: bold;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background-color: #8b0000; color: #000; }
+
+        #message {
+            margin-top: 25px;
+            font-size: 14px;
+            min-height: 60px;
+            padding: 20px;
+            background-color: #050505;
+            border: 1px solid #111;
+            line-height: 1.6;
+            letter-spacing: 1px;
+            color: #777;
+        }
+        
+        strong { color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="shapes-bg">
+        <span class="shape-1">†</span>
+        <span class="shape-2">Ø</span>
+        <span class="shape-3">☠</span>
+        <span class="shape-4">†</span>
+    </div>
+
+    <div class="container">
+        <h1>THE ABYSS</h1>
+        <div class="sub-title">제 4 구역: 처형실 (HELL MODE)</div>
+        
+        <!-- 타이머 -->
+        <div class="timer-box">
+            <div class="timer-text">TIME TO DEATH: <span id="timeDisplay">7</span>s <span id="timerWarn" style="color:#ff3333; display:none;">[패닉 적용]</span></div>
+            <div class="timer-bar-bg">
+                <div id="timerBar" class="timer-bar-fill"></div>
+            </div>
+        </div>
+        
+        <div class="status-board">
+            <div class="player" id="playerLabel">
+                YOUR LIFE (MARBLES)
+                <span class="marble-count" id="playerMarbles">12</span>
+            </div>
+            <div class="computer">
+                EXECUTIONER
+                <span class="marble-count" id="compMarbles">12</span>
+            </div>
+        </div>
+
+        <!-- 게임 영역 -->
+        <div id="gameZone" class="game-zone">
+            <!-- 공격 턴 -->
+            <div id="attackZone" style="display: block;">
+                <h3 style="color: #666; margin-top: 0; font-size: 15px; letter-spacing: 2px;">[ 공격: 간수들의 조소 ]</h3>
+                <p style="margin-bottom: 25px; font-size: 13px; color: #444;">간수가 구슬을 쥐었습니다. 선택을 삐끗하면 즉사입니다.</p>
+                <button class="btn-odd" onclick="playAttack('odd')">홀에 남은 숨결을 건다</button>
+                <button class="btn-even" onclick="playAttack('even')">짝에 남은 숨결을 건다</button>
+            </div>
+            
+            <!-- 수비 턴 -->
+            <div id="defendZone" style="display: none;">
+                <h3 style="color: #8b0000; margin-top: 0; font-size: 15px; letter-spacing: 2px;">[ 방어: 단두대 앞의 독백 ]</h3>
+                <p style="margin-bottom: 20px; font-size: 13px; color: #ff3333; font-weight:bold;">⚠️ 간파당할 시 숨긴 개수의 2배를 강탈당합니다.</p>
+                <input type="number" id="hideAmount" value="1" min="1">
+                <button class="btn-action" onclick="playDefend()">숨기고 숨죽이기</button>
+            </div>
+        </div>
+
+        <div id="message">어둠 속에서 살기 위해 몸부림치십시오. 지체하면 그대로 목이 날아갑니다.</div>
+    </div>
+
+    <script>
+        let playerMarbles = 12;
+        let compMarbles = 12;
+        let currentTurn = 'attack'; 
+        
+        let maxTime = 7;
+        let timeLeft = 7;
+        let timerInterval;
+        let isProcessing = false;
+
+        // 유저의 행동 패턴 기억 (최근 3번의 방어 유형 기록 - 'odd' 또는 'even')
+        let playerPattern = [];
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            
+            // 난이도 메커니즘 1: 패닉 타임어택 (구슬 5개 이하 시 3초로 대폭 제한)
+            if (playerMarbles <= 5) {
+                maxTime = 3;
+                document.getElementById('timerWarn').style.display = 'inline';
+            } else {
+                maxTime = 7;
+                document.getElementById('timerWarn').style.display = 'none';
+            }
+            
+            timeLeft = maxTime;
+            document.getElementById('timeDisplay').innerText = timeLeft;
+            
+            let timerBar = document.getElementById('timerBar');
+            timerBar.style.transition = 'none';
+            timerBar.style.width = '100%';
+            timerBar.style.backgroundColor = '#8b0000';
+            
+            setTimeout(() => {
+                timerBar.style.transition = `width 1s linear, background-color 0.5s`;
+            }, 50);
+
+            timerInterval = setInterval(() => {
+                if(isProcessing) return;
+                
+                timeLeft--;
+                document.getElementById('timeDisplay').innerText = timeLeft;
+                
+                let percent = (timeLeft / maxTime) * 100;
+                timerBar.style.width = percent + '%';
+                
+                if(timeLeft <= 2) {
+                    timerBar.style.backgroundColor = '#ff0000';
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function handleTimeout() {
+            isProcessing = true;
+            let msg = "";
+            
+            if (currentTurn === 'attack') {
+                msg = `<span style="color:#ff3333; font-size:16px;">[ 경고 ] 의사결정 지체.</span><br><span style="color:#444">공격 자격 박탈. 단두대가 한 칸 내려옵니다.</span>`;
+                document.getElementById('message').innerHTML = msg;
+                currentTurn = 'defend';
+            } else {
+                let forcedHide = 1;
+                document.getElementById('hideAmount').value = forcedHide;
+                msg = `<span style="color:#ff3333; font-size:16px;">[ 경고 ] 무단 기동 정지.</span><br><span style="color:#444">벌벌 떨다 구슬 1개만 쥐었습니다. 강제 검문을 시작합니다.</span>`;
+                document.getElementById('message').innerHTML = msg;
+                
+                setTimeout(() => {
+                    isProcessing = false;
+                    playDefend(true); 
+                }, 1500);
+                return; 
+            }
+            
+            setTimeout(() => {
+                updateUI();
+                isProcessing = false;
+            }, 2500);
+        }
+
+        function updateUI() {
+            document.getElementById('playerMarbles').innerText = playerMarbles;
+            document.getElementById('compMarbles').innerText = compMarbles;
+            
+            if (playerMarbles <= 5) {
+                document.body.classList.add('danger-mode');
+                document.getElementById('playerLabel').classList.add('player-danger');
+            } else {
+                document.body.classList.remove('danger-mode');
+                document.getElementById('playerLabel').classList.remove('player-danger');
+            }
+            
+            let inputField = document.getElementById('hideAmount');
+            inputField.max = playerMarbles;
+            if(parseInt(inputField.value) > playerMarbles) inputField.value = playerMarbles;
+
+            if (currentTurn === 'attack') {
+                document.getElementById('attackZone').style.display = 'block';
+                document.getElementById('defendZone').style.display = 'none';
+            } else {
+                document.getElementById('attackZone').style.display = 'none';
+                document.getElementById('defendZone').style.display = 'block';
+            }
+            
+            startTimer(); 
+        }
+
+        function playAttack(playerGuess) {
+            if(isProcessing) return;
+            isProcessing = true;
+            clearInterval(timerInterval);
+
+            // 난이도 메커니즘 2: 매치 후반부로 갈수록 간수가 쥐는 판돈 상한선 상승
+            let upperLimit = Math.min(compMarbles, 8); 
+            let compHidden = Math.floor(Math.random() * upperLimit) + 1;
+            
+            let isCompOdd = (compHidden % 2 !== 0);
+            let isPlayerGuessOdd = (playerGuess === 'odd');
+
+            let msg = `간수가 펼친 손바닥에는 <strong>${compHidden}개(${isCompOdd ? '홀' : '짝'})</strong>가 놓여있었습니다.<br>`;
+
+            if (isCompOdd === isPlayerGuessOdd) {
+                let taken = compHidden;
+                if (compMarbles - taken < 0) taken = compMarbles; 
+
+                playerMarbles += taken;
+                compMarbles -= taken;
+                msg += `<span style="color:#ff3333; font-size:16px;">[ 약탈 성공 ] 간수의 주머니에서 ${taken}개의 생명을 찢어왔습니다.</span>`;
+            } else {
+                msg += `<span style="color:#555">예상이 빗나갔습니다. 허공에 칼질을 한 채 차례가 넘어갑니다.</span>`;
+            }
+
+            document.getElementById('message').innerHTML = msg;
+            if (checkGameOver()) return;
+            
+            currentTurn = 'defend';
+            setTimeout(() => {
+                updateUI();
+                isProcessing = false;
+            }, 2500);
+        }
+
+        function playDefend(isTimeout = false) {
+            if(isProcessing && !isTimeout) return;
+            isProcessing = true;
+            clearInterval(timerInterval);
+
+            let playerHidden = parseInt(document.getElementById('hideAmount').value);
+
+            if (isNaN(playerHidden) || playerHidden < 1 || playerHidden > playerMarbles) {
+                alert(`가진 수명을 넘어서서 사기 칠 생각 마십시오. (1~${playerMarbles}개)`);
+                isProcessing = false;
+                startTimer();
+                return;
+            }
+
+            let isPlayerOdd = (playerHidden % 2 !== 0);
+            let playerCurrentChoice = isPlayerOdd ? 'odd' : 'even';
+
+            // 난이도 메커니즘 3: 처형자의 예측 저격 알고리즘 수행
+            let compGuess = 'odd';
+            if (playerPattern.length >= 2) {
+                // 유저가 직전에 무엇을 많이 냈는지 카운트하여 저격
+                let oddCount = playerPattern.filter(x => x === 'odd').length;
+                let evenCount = playerPattern.filter(x => x === 'even').length;
+                
+                if (oddCount > evenCount) compGuess = 'odd';
+                else if (evenCount > oddCount) compGuess = 'even';
+                else compGuess = Math.random() < 0.5 ? 'odd' : 'even';
+            } else {
+                compGuess = Math.random() < 0.5 ? 'odd' : 'even';
+            }
+
+            // 패턴 배열 업데이트 (최근 3개만 유지)
+            playerPattern.push(playerCurrentChoice);
+            if(playerPattern.length > 3) playerPattern.shift();
+
+            let isCompGuessOdd = (compGuess === 'odd');
+            
+            let msg = document.getElementById('message').innerHTML;
+            if(!isTimeout) msg = ""; 
+            else msg += "<br><br>";
+
+            msg += `처형자가 당신의 영혼을 꿰뚫어 보듯 <strong>"${compGuess === 'odd' ? '홀' : '짝'}"</strong>을 선고합니다.<br>`;
+
+            if (isPlayerOdd === isCompGuessOdd) {
+                // 난이도 메커니즘 4: 걸리면 2배 압수 페널티
+                let lost = playerHidden * 2;
+                if (playerMarbles - lost < 0) lost = playerMarbles;
+
+                playerMarbles -= lost;
+                compMarbles += lost;
+                msg += `<span style="color:#ff3333; font-size:16px;">[ 간파당함 - 2배 징벌 ] 처형자가 당신의 버릇을 읽었습니다! 수명 ${lost}조각을 뜯깁니다.</span>`;
+            } else {
+                msg += `<span style="color:#666">그가 심리전에서 헛다리를 짚었습니다. 간신히 피 냄새를 흘리며 살아남았습니다.</span>`;
+            }
+
+            document.getElementById('message').innerHTML = msg;
+            if (checkGameOver()) return;
+            
+            currentTurn = 'attack';
+            setTimeout(() => {
+                updateUI();
+                isProcessing = false;
+            }, 2500);
+        }
+
+        function checkGameOver() {
+            if (playerMarbles <= 0) {
+                clearInterval(timerInterval);
+                setTimeout(() => {
+                    alert("...암전. 당신의 영혼은 이 지옥에 영원히 묶였습니다.");
+                    location.reload();
+                }, 500);
+                return true;
+            } else if (compMarbles <= 0) {
+                clearInterval(timerInterval);
+                setTimeout(() => {
+                    alert("철창문이 열립니다. 당신은 수많은 시체를 등지고 걸어 나갑니다.");
+                    location.reload();
+                }, 500);
+                return true;
+            }
+            return false;
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
